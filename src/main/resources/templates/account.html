@@ -24,6 +24,33 @@
     </div>
   </div>
 
+  <!-- Add ingredient card -->
+  <div class="card mt-4">
+    <div class="card-header">
+      Add Ingredients
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">Your Ingredients</h5>
+      <form id="ingredientForm" class="d-flex">
+        <input type="text" class="form-control me-2" id="ingredientInput" placeholder="Enter ingredient" required>
+        <button type="submit" class="btn btn-success">Add</button>
+      </form>
+
+      <h6 class="mt-4">Ingredients List:</h6>
+      <ul id="ingredientsList" class="list-group mt-2">
+        <li class="list-group-item" id="ingredients-list" th:each="ingredient : ${ingredients}" style="display: flex; justify-content: space-between; align-items: center;">
+          <p class="align-middle m-0" th:text="${ingredient.name}">Ingredient Name</p>
+
+          <!-- SVG for delete action -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16" style="cursor: pointer;">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+          </svg>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+
   <div class="card mt-4">
     <div class="card-header">
       Account Settings
@@ -51,8 +78,117 @@
 
 <footer class="bg-light text-center text-lg-start mt-5">
   <div class="text-center p-3">
-    © 2024 Your Company
+    © 2024 Austin Rheyne
   </div>
 </footer>
+
+<script>
+  function createRemoveEvent(element) {
+    let parent = element.parentElement;
+    if (!parent) {
+      console.error("Element does not have a parent element.");
+      return;  // Exit early if no parent exists
+    }
+
+    element.addEventListener('click', async () => {
+      try {
+        // Use `parent.children[0]` instead of `parent.children()`
+        const ingredientName = parent.children[0].innerHTML;
+        console.log("Ingredient to delete:", ingredientName);
+
+        const response = await fetch(`/delete-ingredient/${ingredientName}`, {  // Send DELETE request to backend
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          // Remove the ingredient from the list if deletion is successful
+          parent.parentElement.removeChild(parent);
+        } else {
+          alert("Failed to delete ingredient.");
+        }
+      } catch (error) {
+        console.error("Error deleting ingredient:", error);
+        alert("An error occurred while deleting the ingredient.");
+      }
+    });
+  }
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const ingredientsList = document.querySelector("#ingredientsList");
+
+    // Add event listeners to existing ingredients after DOM is ready
+    for (let i = 0; i < ingredientsList.children.length; i++) {
+      createRemoveEvent(ingredientsList.children[i].children[1]);  // Accessing the <svg> element
+    }
+
+    const ingredientForm = document.querySelector("#ingredientForm");
+
+    ingredientForm.addEventListener("submit", function (event) {
+      event.preventDefault(); // Prevent default form submission
+
+      const ingredient = document.querySelector("#ingredientInput").value;
+
+      fetch("/add-ingredient", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ingredient }),
+      })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  // Update the ingredients list without refreshing
+                  const ingredientsList = document.querySelector("#ingredientsList");
+                  const newIngredient = document.createElement("li");
+                  newIngredient.className = "list-group-item";
+                  newIngredient.style.display = "flex";
+                  newIngredient.style.justifyContent = "space-between";
+                  newIngredient.style.alignItems = "center";
+
+                  // Create the <p> element for the ingredient name
+                  const ingredientName = document.createElement("p");
+                  ingredientName.className = "align-middle m-0";
+                  ingredientName.textContent = data.ingredient; // Assuming `data.ingredient.name` is available
+
+                  // Create the <svg> for the "x" icon (remove action)
+                  const svgIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                  svgIcon.setAttribute("width", "16");
+                  svgIcon.setAttribute("height", "16");
+                  svgIcon.setAttribute("fill", "currentColor");
+                  svgIcon.setAttribute("class", "bi bi-x");
+                  svgIcon.setAttribute("viewBox", "0 0 16 16");
+                  svgIcon.style.cursor = "pointer"; // Makes the SVG look clickable
+
+                  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                  path.setAttribute("d", "M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708");
+
+                  svgIcon.appendChild(path);
+
+                  // Append the elements to the <li>
+                  newIngredient.appendChild(ingredientName);
+                  newIngredient.appendChild(svgIcon);
+
+                  // Add the new ingredient to the list
+                  ingredientsList.appendChild(newIngredient);
+
+                  // Add the click event to the SVG icon
+                  createRemoveEvent(svgIcon);
+
+                } else {
+                  alert("Failed to add ingredient");
+                }
+              })
+              .catch(error => console.error("Error:", error));
+    });
+  });
+</script>
+
+
+
 </body>
 </html>

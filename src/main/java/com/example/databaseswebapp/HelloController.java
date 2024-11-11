@@ -5,11 +5,14 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+
+import javax.xml.crypto.Data;
+import java.util.Map;
 
 @Controller
 public class HelloController {
@@ -51,7 +54,7 @@ public class HelloController {
     }
 
     @PostMapping("/login")
-    public String LoginPost(@RequestParam("email") String email,
+    public String loginPost(@RequestParam("email") String email,
                             @RequestParam("password") String password,
                             HttpServletResponse response) {
         boolean success = Database.login(email, password);
@@ -64,6 +67,22 @@ public class HelloController {
         } else {
             return "redirect:/login-failure";
         }
+    }
+
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+
+        for (Cookie cookie: cookies) {
+            if(cookie.getName().equals("email")) {
+                cookie.setMaxAge(0);
+                response.addCookie(cookie);
+                break;
+            }
+        }
+
+        return "redirect:/";
     }
 
     @GetMapping("/login-success")
@@ -88,8 +107,67 @@ public class HelloController {
 
         model.addAttribute("email", email);
         model.addAttribute("joinedDate", Database.getJoinDate(email));
+        model.addAttribute("ingredients", Database.getIngredients(email));
         return "account";
     }
+
+    @PostMapping("update-password")
+    public String updatePassword(@RequestParam("currentPassword") String currentPassword,
+                                 @RequestParam("newPassword") String newPassword,
+                                 @RequestParam("confirmPassword") String confirmPassword,
+                                 Model model, HttpServletRequest request) {
+        String email = getCookieValue(request, "email");
+        if(newPassword.equals(confirmPassword)) {
+            if(Database.changePassword(email, currentPassword, newPassword)) {
+                return "redirect:/update-success";
+            } else {
+                return "redirect:/update-failure";
+            }
+        } else {
+            return "redirect:/update-failure";
+        }
+    }
+
+    @GetMapping("/update-success")
+    public String updateSuccess(Model model) {
+        model.addAttribute("message", "Success! You've updated your password!");
+        return "message";
+    }
+
+    @GetMapping("/update-failure")
+    public String updateFailure(Model model) {
+        model.addAttribute("message", "Fail! An error occurred when attempted to change your password");
+        return "message";
+    }
+    @PostMapping("/add-ingredient")
+    public ResponseEntity<?> addIngredient(@RequestBody Map<String, String> payload, HttpServletRequest request) {
+        String ingredientName = payload.get("ingredient");
+        String email = getCookieValue(request, "email");
+        // Add logic to save the ingredient to the user's list
+        boolean result = Database.insertIngredient(email, ingredientName);
+
+        // Respond with JSON including the added ingredient
+        if (result) {
+            return ResponseEntity.ok(Map.of("success", true, "ingredient", ingredientName));
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false));
+        }
+    }
+
+    @DeleteMapping("/delete-ingredient/{name}")
+    public ResponseEntity<?> deleteIngredient(@PathVariable("name") String name, HttpServletRequest request) {
+        String email = getCookieValue(request, "email"); // Assuming this function retrieves the email from the cookie
+        // Add logic to delete the ingredient from the user's list
+        boolean result = Database.deleteIngredient(email, name); // Assuming this method handles deletion in the database
+
+        // Respond with JSON based on the result
+        if (result) {
+            return ResponseEntity.ok(Map.of("success", true));
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("success", false));
+        }
+    }
+
 
     private String getCookieValue(HttpServletRequest request, String name) {
         if (request.getCookies() != null) {
