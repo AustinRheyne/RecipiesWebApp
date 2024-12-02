@@ -175,7 +175,7 @@ public class HelloController {
             model.addAttribute("email", email);
         }
 
-        Recipe[] recipes = Database.getRecipes();
+        Recipe[] recipes = Database.getRecipes(email);
         model.addAttribute("recipes", recipes);
         return "recipes";
     }
@@ -190,7 +190,7 @@ public class HelloController {
         if(recipe != null) {
             model.addAttribute("recipe", recipe);
         }
-        Ingredient[] ingredients = Database.getRecipeIngredients(id);
+        Ingredient[] ingredients = Database.getRecipeIngredients(id, email);
         if(ingredients != null) {
             model.addAttribute("ingredients", ingredients);
         }

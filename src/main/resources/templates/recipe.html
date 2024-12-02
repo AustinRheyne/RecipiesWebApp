@@ -17,7 +17,11 @@
             <h1 class="display-5 mb-3" th:text="${recipe.getName()}"></h1>
             <p class="lead">Ingredients:</p>
             <ul class="list-group">
-                <li class="list-group-item" th:each="ingredient : ${ingredients}" th:text="${ingredient.name}"></li>
+                <li class="list-group-item"
+                    th:each="ingredient : ${ingredients}"
+                    th:text="${ingredient.name}"
+                    th:classappend="${ingredient.ownedByUser} ? 'list-group-item-success' : 'list-group-item-danger'">
+                </li>
             </ul>
         </div>
     </div>

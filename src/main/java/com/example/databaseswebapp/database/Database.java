@@ -3,6 +3,7 @@ package com.example.databaseswebapp.database;
 import com.example.databaseswebapp.Ingredient;
 import com.example.databaseswebapp.Recipe;
 
+import javax.xml.crypto.Data;
 import java.io.FileInputStream;
 import java.sql.*;
 import java.time.LocalDate;
@@ -152,7 +153,7 @@ public class Database {
                 try (ResultSet rs = ps.executeQuery()) {
                     ArrayList<Ingredient> ingredients = new ArrayList<>();
                     while (rs.next()) {
-                        Ingredient newIngredient = new Ingredient(rs.getString(1), 1);
+                        Ingredient newIngredient = new Ingredient(rs.getString(1), 1, true);
                         ingredients.add(newIngredient);
                     }
                     return ingredients.toArray(new Ingredient[0]);
@@ -165,10 +166,11 @@ public class Database {
         }
     }
 
-    public static Ingredient[] getRecipeIngredients(String id) {
+    public static Ingredient[] getRecipeIngredients(String id, String email) {
+        // Get all ingredients, check which ones the user has
         try (Connection connection = Database.newConnection()) {
             String sql =
-                    " SELECT ingredients.name"
+                    " SELECT ingredients.name, ingredients.id"
                             + " FROM ingredients "
                             + " JOIN usesingredients ON ingredients.id = usesIngredients.ingredientId"
                             + " JOIN recipes ON usesIngredients.recipeId = recipes.id"
@@ -180,7 +182,24 @@ public class Database {
                 try (ResultSet rs = ps.executeQuery()) {
                     ArrayList<Ingredient> ingredients = new ArrayList<>();
                     while (rs.next()) {
-                        Ingredient newIngredient = new Ingredient(rs.getString(1), 1);
+                        String name = rs.getString(1);
+                        boolean hasIngredient = false;
+
+                        // Check if the user has this ingredient
+                        if(email != null) {
+                            String ingredientSQL = "SELECT ingredientId FROM hasIngredient WHERE ingredientId = ?";
+                            try (PreparedStatement is = connection.prepareStatement(ingredientSQL)) {
+                                is.setString(1, rs.getString(2));
+                                try (ResultSet iRs = is.executeQuery()) {
+                                    if (iRs.next()) {
+                                        hasIngredient = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        Ingredient newIngredient = new Ingredient(name, 1, hasIngredient);
+                        System.out.println(name);
                         ingredients.add(newIngredient);
                     }
                     return ingredients.toArray(new Ingredient[0]);
@@ -192,6 +211,7 @@ public class Database {
             return null;
         }
     }
+
     public static boolean deleteIngredient(String email, String ingredient) {
         try (Connection connection = Database.newConnection()) {
             // Get the user's id, and the ingredients id
@@ -236,7 +256,8 @@ public class Database {
                 ps.setString(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4));
+                        // We don't care about how many ingredients we're missing on this page, as it's displayed via color coordination later on. We can say 0.
+                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), 0);
                         return newRecipe;
                     }
                 }
@@ -248,7 +269,8 @@ public class Database {
             return null;
         }
     }
-    public static Recipe[] getRecipes() {
+
+    public static Recipe[] getRecipes(String email) {
         try (Connection connection = Database.newConnection()) {
             String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id";
 
@@ -256,7 +278,7 @@ public class Database {
                 try (ResultSet rs = ps.executeQuery()) {
                     ArrayList<Recipe> recipes = new ArrayList<>();
                     while (rs.next()) {
-                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4));
+                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), getMissingIngredients(rs.getString(4), email));
                         recipes.add(newRecipe);
                     }
                     return recipes.toArray(new Recipe[0]);
@@ -268,6 +290,50 @@ public class Database {
             return null;
         }
     }
+
+    private static int getMissingIngredients(String id, String email) {
+        int missing = 0;
+        // Get the total number of ingredients
+        try(Connection connection = Database.newConnection()) {
+            String sql = "SELECT COUNT(*) FROM usesIngredients WHERE recipeId = ?";
+            try(PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, id);
+                try(ResultSet rs = ps.executeQuery()) {
+                    if(rs.next()) {
+                        missing = rs.getInt(1);
+                    }
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return 0;
+        }
+
+        int userHas = 0;
+        try(Connection connection = Database.newConnection()) {
+            String sql = "SELECT COUNT(*) FROM usesIngredients JOIN ingredients ON usesIngredients.ingredientId = ingredients.id JOIN hasIngredient ON hasIngredient.ingredientId = ingredients.id JOIN users ON users.id = hasIngredient.userId WHERE recipeId = ? AND users.email = ?";
+            try(PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, id);
+                ps.setString(2, email);
+                try(ResultSet rs = ps.executeQuery()) {
+                    if(rs.next()) {
+                        userHas = rs.getInt(1);
+                        System.out.println(userHas);
+                    }
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return 0;
+        }
+
+        return missing - userHas;
+    }
+
     public static String getJoinDate(String email) {
         try (Connection connection = Database.newConnection()) {
             try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM users WHERE email = ?")) {
