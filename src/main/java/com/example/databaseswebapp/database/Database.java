@@ -1,6 +1,7 @@
 package com.example.databaseswebapp.database;
 
 import com.example.databaseswebapp.Ingredient;
+import com.example.databaseswebapp.Recipe;
 
 import java.io.FileInputStream;
 import java.sql.*;
@@ -135,7 +136,7 @@ public class Database {
         }
     }
 
-    public static Ingredient[] getIngredients(String email) {
+    public static Ingredient[] getUserIngredients(String email) {
 
         try (Connection connection = Database.newConnection()) {
             String sql =
@@ -164,6 +165,33 @@ public class Database {
         }
     }
 
+    public static Ingredient[] getRecipeIngredients(String id) {
+        try (Connection connection = Database.newConnection()) {
+            String sql =
+                    " SELECT ingredients.name"
+                            + " FROM ingredients "
+                            + " JOIN usesingredients ON ingredients.id = usesIngredients.ingredientId"
+                            + " JOIN recipes ON usesIngredients.recipeId = recipes.id"
+                            + " WHERE recipes.id = ?";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    ArrayList<Ingredient> ingredients = new ArrayList<>();
+                    while (rs.next()) {
+                        Ingredient newIngredient = new Ingredient(rs.getString(1), 1);
+                        ingredients.add(newIngredient);
+                    }
+                    return ingredients.toArray(new Ingredient[0]);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return null;
+        }
+    }
     public static boolean deleteIngredient(String email, String ingredient) {
         try (Connection connection = Database.newConnection()) {
             // Get the user's id, and the ingredients id
@@ -197,6 +225,47 @@ public class Database {
             e.printStackTrace(System.err);
             System.out.println(e.getMessage());
             return false;
+        }
+    }
+
+    public static Recipe getRecipe(String id) {
+        try (Connection connection = Database.newConnection()) {
+            String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id WHERE recipes.id = ?";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4));
+                        return newRecipe;
+                    }
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return null;
+        }
+    }
+    public static Recipe[] getRecipes() {
+        try (Connection connection = Database.newConnection()) {
+            String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    ArrayList<Recipe> recipes = new ArrayList<>();
+                    while (rs.next()) {
+                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4));
+                        recipes.add(newRecipe);
+                    }
+                    return recipes.toArray(new Recipe[0]);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return null;
         }
     }
     public static String getJoinDate(String email) {

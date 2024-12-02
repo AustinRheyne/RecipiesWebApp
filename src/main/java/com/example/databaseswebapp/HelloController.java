@@ -107,7 +107,7 @@ public class HelloController {
 
         model.addAttribute("email", email);
         model.addAttribute("joinedDate", Database.getJoinDate(email));
-        model.addAttribute("ingredients", Database.getIngredients(email));
+        model.addAttribute("ingredients", Database.getUserIngredients(email));
         return "account";
     }
 
@@ -168,6 +168,34 @@ public class HelloController {
         }
     }
 
+    @GetMapping("/recipes")
+    public String getRecipes(HttpServletRequest request, Model model) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+
+        Recipe[] recipes = Database.getRecipes();
+        model.addAttribute("recipes", recipes);
+        return "recipes";
+    }
+
+    @GetMapping("/recipe/{id}")
+    public String getRecipe(HttpServletRequest request, Model model, @PathVariable("id") String id) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+        Recipe recipe = Database.getRecipe(id);
+        if(recipe != null) {
+            model.addAttribute("recipe", recipe);
+        }
+        Ingredient[] ingredients = Database.getRecipeIngredients(id);
+        if(ingredients != null) {
+            model.addAttribute("ingredients", ingredients);
+        }
+        return "recipe";
+    }
 
     private String getCookieValue(HttpServletRequest request, String name) {
         if (request.getCookies() != null) {
