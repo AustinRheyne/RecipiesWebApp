@@ -14,11 +14,19 @@
 <div class="container my-4">
     <h1 class="text-center mb-4">Recipe List</h1>
     <div id="recipes" th:each="recipe : ${recipes}">
-        <div class="card" style="width: 18rem;">
+        <div class="card text-bg-light" style="width: 18rem;">
             <a th:href="@{'/recipe/' + ${recipe.getId()}}" class="card-link" style="text-decoration: none;">
             <div class="card-body">
                 <h5 class="card-title"><span th:text="${recipe.getName()}"></span></h5>
-                <h6 class="card-subtitle mb-2 text-muted">Missing <span th:text="${recipe.getMissing()}"> ingredients.</span></h6>
+                <h6 class="card-subtitle mb-2 text-muted">
+                    <span th:if="${recipe.getMissing() > 0}">
+                        Missing <span th:text="${recipe.getMissing()}"></span> ingredient(s).
+                    </span>
+
+                    <span th:unless="${recipe.getMissing() > 0}">
+                        All ingredients owned.
+                    </span>
+                </h6>
                 <img class="card-img-top" th:src="@{'/images/' + ${recipe.getImagePath()}}">
                 </div>
             </a>
