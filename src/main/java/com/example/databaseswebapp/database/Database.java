@@ -248,6 +248,85 @@ public class Database {
         }
     }
 
+    public static boolean createRecipe(String name, String directions, String[] ingredients, String imagePath) {
+        try (Connection connection = Database.newConnection()) {
+            // Insert the recipe
+            int recipeId = 0;
+            try (PreparedStatement ps = connection.prepareStatement("" +
+                    "INSERT INTO recipes (name, recipe) VALUES (?, ?)",
+                    Statement.RETURN_GENERATED_KEYS
+            )) {
+                ps.setString(1, name);
+                ps.setString(2, directions);
+                ps.executeUpdate();
+
+                try(ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        recipeId = generatedKeys.getInt(1);
+                    }
+                }
+            }
+
+            // Link ingredients
+            for (String ingredient: ingredients) {
+                // Get ingredient id or create it if it does not exist
+                int ingredientId = 0;
+                String sql = "SELECT id FROM ingredients WHERE name = ?";
+                try (PreparedStatement ps = connection.prepareStatement(sql))
+                {
+                    ps.setString(1, ingredient);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        // The ingredient exists!
+                        if (rs.next()) {
+                            ingredientId = rs.getInt(1);
+                        } else {
+                        // The ingredient doesn't exist, we need to create it
+                            try (PreparedStatement createIng = connection.prepareStatement("INSERT INTO ingredients (name) VALUES (?)",
+                                    Statement.RETURN_GENERATED_KEYS)) {
+                                createIng.setString(1, ingredient);
+                                createIng.executeUpdate();
+
+                                // Retrive the id
+                                try (ResultSet generatedKeys = createIng.getGeneratedKeys()) {
+                                    if (generatedKeys.next()) {
+                                        int generateId = generatedKeys.getInt(1);
+                                        System.out.println("Generated Ingredient ID: " + generateId);
+                                        ingredientId = generateId;
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                // Link the ingredient
+                try (PreparedStatement ps = connection.prepareStatement("" +
+                        "INSERT INTO usesIngredients (recipeId, ingredientId, quantity) VALUES " +
+                        "(?, ?, 1)"
+                )) {
+                    ps.setInt(1, recipeId);
+                    ps.setInt(2, ingredientId);
+                    ps.executeUpdate();
+                }
+            }
+
+            // Link the image
+            try (PreparedStatement ps = connection.prepareStatement("" +
+                    "INSERT INTO usesImage (recipeId, imagePath) VALUES " +
+                    "(?, ?)"
+            )) {
+                ps.setInt(1, recipeId);
+                ps.setString(2, imagePath);
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
     public static Recipe getRecipe(String id) {
         try (Connection connection = Database.newConnection()) {
             String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id WHERE recipes.id = ?";

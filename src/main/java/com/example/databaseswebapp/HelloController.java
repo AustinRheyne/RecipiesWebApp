@@ -1,6 +1,8 @@
 package com.example.databaseswebapp;
 
 import com.example.databaseswebapp.database.Database;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,9 +12,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.xml.crypto.Data;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.SocketHandler;
 
 @Controller
 public class HelloController {
@@ -195,6 +203,50 @@ public class HelloController {
             model.addAttribute("ingredients", ingredients);
         }
         return "recipe";
+    }
+
+    @GetMapping("add-a-recipe")
+    public String addARecipe(HttpServletRequest request, Model model) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+        return "add-a-recipe";
+    }
+
+    @PostMapping("add-a-recipe")
+    public String postARecipe(@RequestParam("recipeTitle") String title,
+                              @RequestParam("recipeImage") MultipartFile img,
+                              @RequestParam("description") String desc,
+                              @RequestParam("ingredientsList") String ingredientsJson) {
+        try {
+            String uploadDir = "C:\\Users\\austi\\OneDrive\\Desktop\\Java Projects\\DatabasesWebApp\\src\\main\\resources\\static\\images\\";
+            File directory = new File(uploadDir);
+            if(directory.exists()) {
+               File file = new File(uploadDir + img.getOriginalFilename());
+               img.transferTo(file);
+
+               // After the image has been sucessfully created, we can store the recipe in the database
+                java.util.List<String> ingredients = new ObjectMapper().readValue(ingredientsJson, new TypeReference<List<String>>() {});
+
+                // Optionally, convert List to array if needed
+                String[] ingredientsArray = ingredients.toArray(new String[0]);
+                Database.createRecipe(title, desc, ingredientsArray, img.getOriginalFilename());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        // Handle img here if needed (e.g., save to disk, convert to another type)
+        return "redirect:/recipes"; // Corrected redirect URL
+    }
+    @GetMapping("about")
+    public String about(HttpServletRequest request, Model model) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+
+        return "about";
     }
 
     private String getCookieValue(HttpServletRequest request, String name) {

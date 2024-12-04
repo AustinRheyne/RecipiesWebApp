@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add a Recipe | Recipe Haven</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        #ingredientsList li {
+            width: fit-content;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/navigation :: navigation"></div>
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Add a Recipe</h1>
+    <form id="recipeForm" method="POST" action="/add-a-recipe" enctype="multipart/form-data">
+        <!-- Recipe Title -->
+        <div class="mb-3">
+            <label for="recipeTitle" class="form-label">Recipe Title</label>
+            <input type="text" class="form-control" name="recipeTitle" id="recipeTitle" placeholder="Enter recipe title" required>
+        </div>
+
+        <!-- Recipe Image -->
+        <div class="mb-3">
+            <label for="recipeImage" class="form-label">Upload Image</label>
+            <input type="file" class="form-control" name="recipeImage" id="recipeImage" accept="image/*" required>
+        </div>
+
+        <!-- Ingredients Section -->
+        <div class="mb-3">
+            <label for="ingredientInput" class="form-label">Add Ingredient</label>
+            <div class="input-group">
+                <input type="text" name="ingredientInput" id="ingredientInput" class="form-control" placeholder="Enter ingredient name">
+                <button type="button" class="btn btn-success" onclick="addIngredient()">Add</button>
+            </div>
+            <ul id="ingredientsList" class="d-flex flex-wrap gap-3 list-unstyled p-0 mt-3"></ul>
+        </div>
+
+        <!-- Description/Instructions -->
+        <div class="mb-3">
+            <label for="description" class="form-label">Description / Instructions</label>
+            <textarea class="form-control" name="description" id="description" rows="5" placeholder="Describe how to make the recipe" required></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary">Add Recipe</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function addIngredient() {
+        const ingredientInput = document.getElementById('ingredientInput');
+        const ingredientName = ingredientInput.value.trim();
+
+        if (ingredientName) {
+            const ingredientsList = document.getElementById('ingredientsList');
+
+            const li = document.createElement('li');
+            li.className = 'list-group-item list-group-item-info d-flex justify-content-between align-items-center border';
+            li.innerHTML = `
+                    <p class="m-0 mx-1">${ingredientName}</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                         class="bi bi-x" viewBox="0 0 16 16" style="cursor: pointer;" onclick="removeIngredient(this)">
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                `;
+
+            ingredientsList.appendChild(li);
+            ingredientInput.value = '';
+        }
+    }
+
+    function removeIngredient(element) {
+        element.parentElement.remove();
+    }
+
+    // Append all ingredient names to the submission
+    document.getElementById("recipeForm").addEventListener("submit", function(event) {
+        // Get all li elements inside the ingredientsList
+        const liElements = document.querySelectorAll("#ingredientsList li");
+
+        // Extract only the text content of the <p> inside each <li>
+        const ingredients = Array.from(liElements).map(li => li.querySelector("p").textContent.trim());
+
+        // Create a hidden input to include the ingredients data in the POST request
+        const ingredientsInput = document.createElement("input");
+        ingredientsInput.type = "hidden";
+        ingredientsInput.name = "ingredientsList";
+        ingredientsInput.value = JSON.stringify(ingredients); // Convert to JSON string
+
+        // Append the hidden input to the form
+        this.appendChild(ingredientsInput);
+    });
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | Recipe Haven</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div th:replace="fragments/navigation :: navigation"></div>
+<div class="container mt-5">
+    <!-- About Section -->
+    <h1 class="text-center mb-4">About Recipe Haven</h1>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Project Overview</h3>
+            <p>
+                Recipe Haven is a recipe-sharing platform designed for people of all skill levels to explore new recipes and share their culinary creations. The website allows users to browse a collection of recipes, add their own, and interact with other cooking enthusiasts. Whether you’re looking to try a new dish or showcase your favorite recipes, Recipe Haven offers a space to do both.
+            </p>
+            <p>
+                This project was created as part of a <strong>Databases class</strong> at Otterbein. The goal of the project was to build a dynamic, data-driven web application utilizing database technologies to manage user-generated content, such as recipes and images. The site uses Thymeleaf and Spring Boot to create a seamless experience for users, while MySQL handles the backend data storage.
+            </p>
+        </div>
+        <div class="col-md-6">
+            <h3>About the Developer</h3>
+            <p>
+                My name is <strong>Austin Rheyne</strong>, and I’m currently studying computer science at Otterbein. I’m passionate about web development, and this project represents one of my many steps toward becoming a backend developer. I’ve enjoyed building this site as a way to combine my love for coding and food.
+            </p>
+            <p>
+                As part of this project, I’ve worked with technologies like Java, Spring Boot, Thymeleaf, and MySQL to develop a fully functioning web application. I’ve focused on creating a seamless user experience and efficient database design, ensuring the site can scale as more recipes are added.
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h2 class="text-center">Why Recipe Haven?</h2>
+        <p class="text-center">
+            Cooking is a creative and enjoyable activity, and Recipe Haven strives to make it easy for anyone to share their passion for food. By providing a platform where users can explore new recipes, create their own, and connect with others, Recipe Haven encourages creativity in the kitchen. Whether you’re looking for inspiration or want to share your culinary creations, this platform has something for everyone.
+        </p>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
