@@ -18,8 +18,8 @@
     <div class="d-flex flex-wrap gap-3">
         <div id="recipes" class="mt-5 fit-content" th:each="recipe : ${recipes}">
         <div class="card text-bg-light" style="width: 18rem;">
-            <a th:href="@{'/recipe/' + ${recipe.getId()}}" class="card-link" style="text-decoration: none;">
             <div class="card-body">
+                <a th:href="@{'/recipe/' + ${recipe.getId()}}" class="card-link" style="text-decoration: none;">
                 <h5 class="card-title"><span th:text="${recipe.getName()}"></span></h5>
                 <h6 class="card-subtitle mb-2 text-muted">
                     <span th:if="${recipe.getMissing() > 0}">
@@ -31,8 +31,9 @@
                     </span>
                 </h6>
                 <img class="card-img-top" th:src="@{'/images/' + ${recipe.getImagePath()}}">
-                </div>
-            </a>
+                </a>
+            </div>
+
         </div>
     </div>
     </div>

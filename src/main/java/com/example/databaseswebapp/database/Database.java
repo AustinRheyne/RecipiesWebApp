@@ -3,7 +3,9 @@ package com.example.databaseswebapp.database;
 import com.example.databaseswebapp.Ingredient;
 import com.example.databaseswebapp.Recipe;
 
-import javax.xml.crypto.Data;
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
+
 import java.io.FileInputStream;
 import java.sql.*;
 import java.time.LocalDate;
@@ -60,7 +62,14 @@ public class Database {
         }
     }
 
-    public static boolean createNewUser(String username, String password) {
+    public static boolean createNewUser(String username, String rawPassword) {
+        Argon2 argon2 = Argon2Factory.create();
+        String password = argon2.hash(2, 65536, 1, rawPassword);
+
+        // Securely wipe plaintext password from memory
+        argon2.wipeArray(rawPassword.toCharArray());
+
+
         try (Connection connection = Database.newConnection()) {
             try (PreparedStatement ps = connection.prepareStatement("INSERT INTO users (email, password, joinDate) VALUES (?, ?, ?)")) {
                 ps.setString(1, username);
@@ -79,12 +88,13 @@ public class Database {
 
     public static boolean login(String username, String password) {
         try (Connection connection = Database.newConnection()) {
-            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM users WHERE email = ? AND password = ?")) {
+            try (PreparedStatement ps = connection.prepareStatement("SELECT email, password FROM users WHERE email = ?")) {
                 ps.setString(1, username);
-                ps.setString(2, password);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) { // only expect 1 row, so using if instead of while
-                        return true;
+                        // Verify that the raw password matches with the hashed password
+                        Argon2 argon2 = Argon2Factory.create();
+                        return argon2.verify(rs.getString("password"), password);
                     }
                     else {
                         return false;
@@ -231,15 +241,40 @@ public class Database {
         }
     }
 
-    public static boolean changePassword(String email, String currentPassword, String newPassword) {
-        try (Connection connection = Database.newConnection()) {
-            try (PreparedStatement ps = connection.prepareStatement("UPDATE users SET password = ? WHERE email = ? AND password = ?")) {
-                ps.setString(1, newPassword);
-                ps.setString(2, email);
-                ps.setString(3, currentPassword);
+    public static boolean changePassword(String email, String currentRawPassword, String newRawPassword) {
+        Argon2 argon2 = Argon2Factory.create();
 
-                ps.executeUpdate();
-                return true;
+        try (Connection connection = Database.newConnection()) {
+            // Retrieve the current hashed password from the database
+            try (PreparedStatement selectPs = connection.prepareStatement("SELECT password FROM users WHERE email = ?")) {
+                selectPs.setString(1, email);
+
+                try (ResultSet rs = selectPs.executeQuery()) {
+                    if (rs.next()) {
+                        String currentHashedPassword = rs.getString("password");
+
+                        // Verify the raw current password with the stored hash
+                        if (argon2.verify(currentHashedPassword, currentRawPassword)) {
+                            // Hash the new password
+                            String newHashedPassword = argon2.hash(2, 65536, 1, newRawPassword);
+
+                            // Update the password in the database
+                            try (PreparedStatement updatePs = connection.prepareStatement("UPDATE users SET password = ? WHERE email = ?")) {
+                                updatePs.setString(1, newHashedPassword);
+                                updatePs.setString(2, email);
+
+                                // Check if the update was successful
+                                return updatePs.executeUpdate() > 0;
+                            }
+                        } else {
+                            // Current password is incorrect
+                            return false;
+                        }
+                    } else {
+                        // Email not found
+                        return false;
+                    }
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace(System.err);
@@ -348,7 +383,44 @@ public class Database {
             return null;
         }
     }
+    public static void incrementView(String recipeId) {
+        try (Connection connection = Database.newConnection()) {
+            try (PreparedStatement ps = connection.prepareStatement("UPDATE recipes SET views = views + 1 WHERE id = ?")) {
+                ps.setString(1, recipeId);
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println(e.getMessage());
+            return;
+        }
 
+    }
+
+    public static Recipe[] getTopRecipes(int amount, String email) {
+        // Get the given number of top recipes
+        try (Connection connection = Database.newConnection()) {
+            String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id ORDER BY recipes.views DESC LIMIT ?";
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, amount);
+                try (ResultSet rs = ps.executeQuery()) {
+                    ArrayList<Recipe> recipes = new ArrayList<>();
+                    while (rs.next()) {
+                        Recipe newRecipe = new Recipe(rs.getString(1), rs.getString(2), rs.getString(3), rs.getInt(4), getMissingIngredients(rs.getString(4), email));
+                        recipes.add(newRecipe);
+                    }
+                    return recipes.toArray(new Recipe[0]);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(System.err);
+            System.out.println("ERROR: " + e.getMessage());
+            return null;
+        }
+
+
+    }
     public static Recipe[] getRecipes(String email) {
         try (Connection connection = Database.newConnection()) {
             String sql = "SELECT name, recipe, imagePath, recipes.id FROM recipes JOIN usesImage ON usesImage.recipeId = recipes.id";

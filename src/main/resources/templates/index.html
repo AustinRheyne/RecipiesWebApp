@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home | Recipe Haven</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            /* background-color: #d2e4fe !important; */
+        }
+    </style>
 </head>
 <body>
 
@@ -16,8 +21,8 @@
         <p class="lead">Discover, create, and share delicious recipes.</p>
         <hr class="my-4">
         <p>Ready to explore? Start by browsing popular recipes or adding your own creation!</p>
-        <a class="btn btn-primary btn-lg" href="@{/recipes}" role="button">Browse Recipes</a>
-        <a class="btn btn-success btn-lg" href="@{/add-a-recipe}" role="button">Add a Recipe</a>
+        <a class="btn btn-primary btn-lg" th:href="@{/recipes}" role="button">Browse Recipes</a>
+        <a class="btn btn-success btn-lg" th:href="@{/add-a-recipe}" role="button">Add a Recipe</a>
     </div>
 
     <!-- Signup/Login Links -->
@@ -28,16 +33,16 @@
 
     <!-- Featured Recipes Section -->
     <h2 class="text-center mb-4">Featured Recipes</h2>
-    <div class="row" th:each="recipe : ${featuredRecipes}">
-        <div class="col-md-4 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="col-md-4 mb-4 mt-5 fit-content" th:each="recipe : ${featuredRecipes}">
             <div class="card">
-                <img th:src="@{'/images/' + ${recipe.imagePath}}" class="card-img-top" alt="Recipe Image">
+                <img th:src="@{'/images/' + ${recipe.getImagePath()}}" class="card-img-top" alt="Recipe Image">
                 <div class="card-body">
-                    <h5 class="card-title" th:text="${recipe.title}">Recipe Title</h5>
-                    <p class="card-text" th:text="${#strings.abbreviate(recipe.description, 100)}">
+                    <h5 class="card-title" th:text="${recipe.getName}">Recipe Title</h5>
+                    <p class="card-text" th:text="${#strings.abbreviate(recipe.getRecipe(), 100)}">
                         A brief description of the recipe...
                     </p>
-                    <a th:href="@{'/recipes/' + ${recipe.id}}" class="btn btn-primary">View Recipe</a>
+                    <a th:href="@{'/recipe/' + ${recipe.getId()}}" class="btn btn-primary">View Recipe</a>
                 </div>
             </div>
         </div>

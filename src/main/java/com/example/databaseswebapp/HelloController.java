@@ -27,12 +27,16 @@ public class HelloController {
 
 
     @GetMapping("/")
-    public String hello(Model model, HttpServletRequest request){
+    public String home(Model model, HttpServletRequest request){
         String email = getCookieValue(request, "email");
         if(email != null) {
             model.addAttribute("email", email);
         }
-        model.addAttribute("version", Database.getVerison());
+
+        Recipe[] featuredRecipes = Database.getTopRecipes(3, email);
+        if(featuredRecipes != null) {
+            model.addAttribute("featuredRecipes", featuredRecipes);
+        }
         return "index";
     }
 
@@ -48,6 +52,8 @@ public class HelloController {
     @PostMapping("/sign-up")
     public String signUpPost(@RequestParam("email") String email,
                              @RequestParam("password") String password) {
+
+
         Database.createNewUser(email, password);
         return "redirect:/login";
     }
@@ -94,13 +100,23 @@ public class HelloController {
     }
 
     @GetMapping("/login-success")
-    public String loginSuccess(Model model) {
+    public String loginSuccess(Model model, HttpServletRequest request) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+
         model.addAttribute("message", "Success! You've been logged in!");
         return "message";
     }
 
     @GetMapping("/login-failure")
-    public String loginFailure(Model model) {
+    public String loginFailure(Model model, HttpServletRequest request) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+
         model.addAttribute("message", "Fail! The account you attempted to login to does not exist");
         return "message";
     }
@@ -137,13 +153,23 @@ public class HelloController {
     }
 
     @GetMapping("/update-success")
-    public String updateSuccess(Model model) {
+    public String updateSuccess(Model model, HttpServletRequest request) {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
         model.addAttribute("message", "Success! You've updated your password!");
         return "message";
     }
 
     @GetMapping("/update-failure")
-    public String updateFailure(Model model) {
+    public String updateFailure(Model model, HttpServletRequest request)
+    {
+        String email = getCookieValue(request, "email");
+        if(email != null) {
+            model.addAttribute("email", email);
+        }
+
         model.addAttribute("message", "Fail! An error occurred when attempted to change your password");
         return "message";
     }
@@ -190,6 +216,7 @@ public class HelloController {
 
     @GetMapping("/recipe/{id}")
     public String getRecipe(HttpServletRequest request, Model model, @PathVariable("id") String id) {
+        // Get the information for the page
         String email = getCookieValue(request, "email");
         if(email != null) {
             model.addAttribute("email", email);
@@ -202,6 +229,8 @@ public class HelloController {
         if(ingredients != null) {
             model.addAttribute("ingredients", ingredients);
         }
+        // Increment the total number of views for this recipe
+        Database.incrementView(id);
         return "recipe";
     }
 
