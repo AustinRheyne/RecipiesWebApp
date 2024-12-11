@@ -249,7 +249,7 @@ public class HelloController {
                               @RequestParam("description") String desc,
                               @RequestParam("ingredientsList") String ingredientsJson) {
         try {
-            String uploadDir = "C:\\Users\\austi\\OneDrive\\Desktop\\Java Projects\\DatabasesWebApp\\src\\main\\resources\\static\\images\\";
+            String uploadDir = "C:\\Users\\austi\\OneDrive\\Desktop\\Java Projects\\DatabasesWebApp\\src\\main\\resources\\public\\images\\";
             File directory = new File(uploadDir);
             if(directory.exists()) {
                File file = new File(uploadDir + img.getOriginalFilename());
