@@ -177,6 +177,7 @@ public class Database {
     }
 
     public static Ingredient[] getRecipeIngredients(String id, String email) {
+        System.out.println(email);
         // Get all ingredients, check which ones the user has
         try (Connection connection = Database.newConnection()) {
             String sql =
@@ -190,6 +191,19 @@ public class Database {
                 ps.setString(1, id);
 
                 try (ResultSet rs = ps.executeQuery()) {
+                    // Pull the user id
+                    String userId = null;
+
+                    try (PreparedStatement psUser = connection.prepareStatement("SELECT id FROM users WHERE email = ?")) {
+                        psUser.setString(1, email);
+                        try (ResultSet rsUser = psUser.executeQuery()) {
+                            if (rsUser.next()) {
+                                userId = rsUser.getString("id"); // or getInt("id") if id is an integer
+                            }
+                        }
+                    }
+
+
                     ArrayList<Ingredient> ingredients = new ArrayList<>();
                     while (rs.next()) {
                         String name = rs.getString(1);
@@ -197,9 +211,10 @@ public class Database {
 
                         // Check if the user has this ingredient
                         if(email != null) {
-                            String ingredientSQL = "SELECT ingredientId FROM hasIngredient WHERE ingredientId = ?";
+                            String ingredientSQL = "SELECT ingredientId FROM hasIngredient WHERE ingredientId = ? AND userId = ?";
                             try (PreparedStatement is = connection.prepareStatement(ingredientSQL)) {
                                 is.setString(1, rs.getString(2));
+                                is.setString(2, userId);
                                 try (ResultSet iRs = is.executeQuery()) {
                                     if (iRs.next()) {
                                         hasIngredient = true;

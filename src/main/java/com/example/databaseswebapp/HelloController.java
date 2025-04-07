@@ -227,6 +227,7 @@ public class HelloController {
         }
         Ingredient[] ingredients = Database.getRecipeIngredients(id, email);
         if(ingredients != null) {
+            System.out.println(Arrays.toString(ingredients));
             model.addAttribute("ingredients", ingredients);
         }
         // Increment the total number of views for this recipe
